@@ -15,4 +15,9 @@
 -->
 <resources>
     <string name="app_name">Quake Report</string>
+    <string name="eventtype">eventtype</string>
+    <string name="orderby">orderby</string>
+    <string name="minmag">minmag</string>
+    <string name="limit">limit</string>
+
 </resources>

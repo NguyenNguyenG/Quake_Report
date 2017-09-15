@@ -15,96 +15,58 @@
  */
 package com.example.android.quakereport;
 
-import android.app.LoaderManager;
-import android.content.ActivityNotFoundException;
-import android.content.Context;
 import android.content.Intent;
-import android.content.Loader;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
+import android.text.TextUtils;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ListView;
-import android.widget.ProgressBar;
-import android.widget.TextView;
-import java.util.ArrayList;
+import android.widget.Button;
+import android.widget.EditText;
 
 
-public class EarthquakeActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<ArrayList<Earthquake>>{
-
-    public static final String LOG_TAG = EarthquakeActivity.class.getName();
-    private final int LoaderID = 0;
-    private String url = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=3&limit=15";
-    private EarthquakeAdapter earthquakeAdapter;
-    private TextView emptyView;
-    private ProgressBar progressBar;
-
+public class EarthquakeActivity extends AppCompatActivity {
+    private String baseQueryURL = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&";
+    public static final String INTENT_DATA = EarthquakeActivity.class.getSimpleName();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.earthquake_activity);
 
-        // Find a reference to the {@link ListView} in the layout
-        ListView earthquakeListView = (ListView) findViewById(R.id.list);
-        emptyView = (TextView) findViewById(R.id.emptyView);
-        progressBar = (ProgressBar) findViewById(R.id.progressBar);
-        // Create a new {@link ArrayAdapter} of earthquakes
-        earthquakeAdapter = new EarthquakeAdapter(this, new ArrayList<Earthquake>());
+        final EditText minMag = (EditText) findViewById(R.id.minMag);
+        final EditText orderBy = (EditText) findViewById(R.id.orderBy);
+        final EditText limit = (EditText) findViewById(R.id.limit);
+        final EditText eventType = (EditText) findViewById(R.id.eventype);
+        Button button = (Button) findViewById(R.id.submit);
 
-        // Set the adapter on the {@link ListView}
-        // so the list can be populated in the user interface
-        earthquakeListView.setAdapter(earthquakeAdapter);
-        earthquakeListView.setEmptyView(emptyView);
-
-        earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        button.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                try{
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(earthquakeAdapter.getItem(position).getUrl()));
-                    startActivity(intent);
-                }catch (ActivityNotFoundException e)
-                {
-                    Log.d(LOG_TAG, "Cannot Open the Url");
-                    e.printStackTrace();
+            public void onClick(View v) {
+                String magnitude = minMag.getText().toString();
+                String order = orderBy.getText().toString();
+                String lim = limit.getText().toString();
+                String event = eventType.getText().toString();
+
+                StringBuilder builder = new StringBuilder();
+                builder.append(baseQueryURL);
+                if(!TextUtils.isEmpty(magnitude)) {
+                    builder.append(getString(R.string.minmag)).append("=").append(magnitude);
                 }
+                if(!TextUtils.isEmpty(order)) {
+                    builder.append("&").append(getString(R.string.orderby)).append("=").append(order);
+                }
+                if(!TextUtils.isEmpty(lim)) {
+                    builder.append("&").append(getString(R.string.limit)).append("=").append(lim);
+                }
+                if(!TextUtils.isEmpty(event)) {
+                    builder.append("&").append(getString(R.string.eventtype)).append("=").append(event);
+                }
+
+                String message = builder.toString();
+                Intent intent = new Intent(EarthquakeActivity.this, EarthquakeDisplay.class);
+                intent.putExtra(INTENT_DATA, message);
+                startActivity(intent);
             }
         });
-        Context context = getApplicationContext();
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        if(activeNetwork  != null && activeNetwork.isConnectedOrConnecting())
-            getLoaderManager().initLoader(LoaderID, null, this);
-        else {
-            progressBar.setVisibility(View.GONE);
-            emptyView.setText("No Internet Connection");
-        }
 
-    }
-
-
-    @Override
-    public Loader<ArrayList<Earthquake>> onCreateLoader(int id, Bundle args) {
-
-        return new EarthquakeLoader(this,url);
-    }
-
-    @Override
-    public void onLoadFinished(Loader<ArrayList<Earthquake>> loader, ArrayList<Earthquake> data) {
-        earthquakeAdapter.clear();
-        Log.i("Loading", "onLoadFinished");
-        progressBar.setVisibility(View.GONE);
-        if(data != null && !data.isEmpty())
-            earthquakeAdapter.addAll(data);
-        emptyView.setText("No Earthquakes Found");
-    }
-
-    @Override
-    public void onLoaderReset(Loader<ArrayList<Earthquake>> loader) {
-        earthquakeAdapter.clear();
-        emptyView.setText("");
     }
 }
